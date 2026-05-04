@@ -1,0 +1,49 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "java-hello-world"
+        CONTAINER_NAME = "java-app-run"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/your-username/java-hello.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                // Build the image and tag it
+                sh "docker build -t ${IMAGE_NAME} ."
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                echo 'Starting container...'
+                // Remove existing container if it exists to avoid name conflicts
+                sh "docker rm -f ${CONTAINER_NAME} || true"
+                
+                // Run the container and capture the output
+                sh "docker run --name ${CONTAINER_NAME} ${IMAGE_NAME}"
+            }
+        }
+
+        stage('Verify Output') {
+            steps {
+                echo 'Verifying container logs...'
+                sh "docker logs ${CONTAINER_NAME}"
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up the container after verification
+            sh "docker rm -f ${CONTAINER_NAME} || true"
+        }
+    }
+}
