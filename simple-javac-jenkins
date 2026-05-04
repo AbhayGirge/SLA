@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Replace with your actual GitHub URL
+                git 'https://github.com/your-username/java-hello.git'
+            }
+        }
+
+        stage('Compile') {
+            steps {
+                echo 'Compiling Java program...'
+                // javac is the Java compiler
+                sh 'javac HelloWorld.java'
+            }
+        }
+
+        stage('Run') {
+            steps {
+                echo 'Executing Java application...'
+                // java runs the compiled .class file
+                sh 'java HelloWorld'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Something went wrong. Check the logs.'
+        }
+    }
+}
