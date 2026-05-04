@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+
+    environment {
+        // Replace with your actual DockerHub username
+        DOCKER_USER = "your_dockerhub_username"
+        IMAGE_NAME = "java-hello-world"
+        REGISTRY_CREDENTIALS_ID = 'dockerhub-creds'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/your-username/java-hello.git'
+            }
+        }
+
+        stage('Build Image') {
+            steps {
+                echo 'Building Image...'
+                // Build and tag locally
+                sh "docker build -t ${IMAGE_NAME} ."
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                // This block securely injects your credentials
+                withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS_ID, 
+                                                passwordVariable: 'DOCKER_PASS', 
+                                                usernameVariable: 'DOCKER_USER_ENV')]) {
+                    
+                    echo 'Logging into DockerHub...'
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER_ENV --password-stdin"
+
+                    echo 'Tagging and Pushing...'
+                    // Tag the image for your repository
+                    sh "docker tag ${IMAGE_NAME} ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                    sh "docker tag ${IMAGE_NAME} ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER}"
+
+                    // Push both 'latest' and the specific build version
+                    sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                    sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Logging out...'
+            sh "docker logout"
+        }
+    }
+}
